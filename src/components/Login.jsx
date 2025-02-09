@@ -1,8 +1,19 @@
 import { useGoogleLogin, googleLogout } from '@react-oauth/google';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function Login() {
+const Login = () => {
     const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+
+    // Check for existing user on component mount
+    useEffect(() => {
+        const existingUser = localStorage.getItem('user');
+        if (existingUser) {
+            setUser(JSON.parse(existingUser));
+            navigate('/dashboard');
+        }
+    }, [navigate]);
 
     const login = useGoogleLogin({
         onSuccess: credentialResponse => {
@@ -15,7 +26,8 @@ function Login() {
             .then(response => response.json())
             .then(data => {
                 setUser(data);
-                console.log(data);
+                localStorage.setItem('user', JSON.stringify(data));
+                navigate('/dashboard'); // Redirect to dashboard after successful login
             });
         },
         onError: () => {
@@ -26,6 +38,7 @@ function Login() {
     const handleLogout = () => {
         googleLogout();
         setUser(null);
+        localStorage.removeItem('user');
     };
 
     return (
