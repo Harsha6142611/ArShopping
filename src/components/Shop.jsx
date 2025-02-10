@@ -124,6 +124,66 @@ function Player() {
   );
 }
 
+// Optional: Helper component to visualize light positions
+function LightHelper({ position }) {
+  return (
+    <mesh position={position}>
+      <sphereGeometry args={[0.1, 16, 16]} />
+      <meshBasicMaterial color="yellow" />
+    </mesh>
+  );
+}
+
+// Add this new component for the interactive object
+function InteractiveBox() {
+  const [hovered, setHovered] = useState(false);
+  
+  const handleClick = () => {
+    alert("You've clicked the interactive box!");
+  };
+
+  return (
+    <mesh
+      position={[2, 1, 2]}
+      onClick={handleClick}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color={hovered ? "#ff9900" : "#666666"} />
+    </mesh>
+  );
+}
+
+function Lights() {
+  return (
+    <>
+      {/* Ambient light - soft light from all directions */}
+      <ambientLight intensity={0.6} />
+
+      {/* Colored point lights */}
+      <pointLight position={[-4, 4, -4]} intensity={1.5} color="#ff0000" />
+      <LightHelper position={[-4, 4, -4]} />
+
+      <pointLight position={[4, 4, -4]} intensity={1.5} color="#00ff00" />
+      <LightHelper position={[4, 4, -4]} />
+
+      <pointLight position={[0, 4, 4]} intensity={1.5} color="#0000ff" />
+      <LightHelper position={[0, 4, 4]} />
+
+      <pointLight position={[0, 4, 0]} intensity={1} color="#ffffff" />
+      <LightHelper position={[0, 4, 0]} />
+
+      {/* Keep the hemisphere light for general illumination */}
+      <hemisphereLight
+        skyColor="#ffffff"
+        groundColor="#444444"
+        intensity={0.4}
+      />
+    </>
+  );
+}
+
 function Shop() {
   const navigate = useNavigate();
 
@@ -134,12 +194,15 @@ function Shop() {
       </button>
 
       <div className="canvas-container">
-        <Canvas camera={{ position: [0, 2, 4], fov: 75 }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} />
+        <Canvas 
+          camera={{ position: [0, 2, 4], fov: 75 }}
+          shadows // Enable shadows
+        >
+          <Lights />
           <Suspense fallback={null}>
             <Room />
             <Player />
+            <InteractiveBox />
           </Suspense>
           <OrbitControls 
             enablePan={false} 

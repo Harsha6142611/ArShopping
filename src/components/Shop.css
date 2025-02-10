@@ -34,3 +34,31 @@ canvas {
     justify-content: center;
     align-items: center;
 }
+
+/* New styles for crosshair and popup button */
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 24px;
+    pointer-events: none;
+    z-index: 100;
+    text-shadow: 0 0 2px black;
+}
+
+.popup-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.popup-btn:hover {
+    background: #45a049;
+}
