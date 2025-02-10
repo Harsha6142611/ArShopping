@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useLoader, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useNavigate } from 'react-router-dom';
@@ -15,8 +15,10 @@ function Player() {
   const { camera } = useThree();
   const playerRef = useRef();
   const keys = useRef({});
+  const [rotation, setRotation] = useState(0);
+  const isMouseDown = useRef(false);
   
-  const playerHeight = 2;
+  const playerHeight = 1.8;
   const playerRadius = 0.3;
 
   useEffect(() => {
@@ -28,12 +30,39 @@ function Player() {
       keys.current[e.key.toLowerCase()] = false;
     };
 
+    const handleMouseDown = (e) => {
+      if (e.button === 0) { // Left click
+        isMouseDown.current = true;
+      }
+    };
+
+    const handleMouseUp = (e) => {
+      if (e.button === 0) { // Left click
+        isMouseDown.current = false;
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      if (isMouseDown.current) {
+        // Adjust rotation speed by changing the division factor
+        setRotation((prev) => prev + e.movementX * 0.01);
+      }
+    };
+
+    // Add all event listeners
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
+      // Remove all event listeners
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 
@@ -44,20 +73,40 @@ function Player() {
     let moveX = 0;
     let moveZ = 0;
 
-    if (keys.current['w']) moveZ -= speed;
-    if (keys.current['s']) moveZ += speed;
-    if (keys.current['a']) moveX -= speed;
-    if (keys.current['d']) moveX += speed;
+    // Calculate movement based on rotation
+    if (keys.current['w']) {
+      moveX += Math.sin(rotation) * speed;
+      moveZ -= Math.cos(rotation) * speed;
+    }
+    if (keys.current['s']) {
+      moveX -= Math.sin(rotation) * speed;
+      moveZ += Math.cos(rotation) * speed;
+    }
+    if (keys.current['a']) {
+      moveX -= Math.cos(rotation) * speed;
+      moveZ -= Math.sin(rotation) * speed;
+    }
+    if (keys.current['d']) {
+      moveX += Math.cos(rotation) * speed;
+      moveZ += Math.sin(rotation) * speed;
+    }
 
-    // Update player position
+    // Update player position and rotation
     playerRef.current.position.x += moveX;
     playerRef.current.position.z += moveZ;
+    playerRef.current.rotation.y = rotation;
 
     // Update camera position (third-person view)
-    const cameraOffset = new THREE.Vector3(0, 2, 4);
-    camera.position.x = playerRef.current.position.x + cameraOffset.x;
-    camera.position.y = playerRef.current.position.y + cameraOffset.y;
-    camera.position.z = playerRef.current.position.z + cameraOffset.z;
+    const cameraDistance = 4;
+    const cameraHeight = 2;
+    const cameraX = playerRef.current.position.x - Math.sin(rotation) * cameraDistance;
+    const cameraZ = playerRef.current.position.z + Math.cos(rotation) * cameraDistance;
+    
+    camera.position.set(
+      cameraX,
+      playerRef.current.position.y + cameraHeight,
+      cameraZ
+    );
     
     // Make camera look at player
     camera.lookAt(
