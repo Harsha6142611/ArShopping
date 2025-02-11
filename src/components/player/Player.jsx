@@ -6,12 +6,17 @@ export function Player() {
   const playerRef = useRef();
   const keys = useRef({});
   const [rotation, setRotation] = useState(0);
+  const [verticalAngle, setVerticalAngle] = useState(0);
   const isMouseDown = useRef(false);
   
-  const playerHeight = 1.8;
-  const playerRadius = 0.3;
+  const playerHeight = 2;
+  const playerRadius = 0.2;
 
   useEffect(() => {
+    // Set the default camera position
+    camera.position.set(5, 5, 5);
+    camera.lookAt(0, 0, 0);
+
     const handleKeyDown = (e) => {
       keys.current[e.key.toLowerCase()] = true;
     };
@@ -35,6 +40,10 @@ export function Player() {
     const handleMouseMove = (e) => {
       if (isMouseDown.current) {
         setRotation((prev) => prev + e.movementX * 0.01);
+        setVerticalAngle((prev) => {
+          const newAngle = prev - e.movementY * 0.01;
+          return Math.max(-Math.PI / 2, Math.min(Math.PI / 2, newAngle));
+        });
       }
     };
 
@@ -51,7 +60,7 @@ export function Player() {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, []);
+  }, [camera]);
 
   useFrame(() => {
     if (!playerRef.current) return;
@@ -61,46 +70,47 @@ export function Player() {
     let moveZ = 0;
 
     if (keys.current['w']) {
-      moveX += Math.sin(rotation) * speed;
-      moveZ -= Math.cos(rotation) * speed;
-    }
-    if (keys.current['s']) {
       moveX -= Math.sin(rotation) * speed;
       moveZ += Math.cos(rotation) * speed;
     }
-    if (keys.current['a']) {
-      moveX -= Math.cos(rotation) * speed;
-      moveZ -= Math.sin(rotation) * speed;
+    if (keys.current['s']) {
+      moveX += Math.sin(rotation) * speed;
+      moveZ -= Math.cos(rotation) * speed;
     }
-    if (keys.current['d']) {
+    if (keys.current['a']) {
       moveX += Math.cos(rotation) * speed;
       moveZ += Math.sin(rotation) * speed;
+    }
+    if (keys.current['d']) {
+      moveX -= Math.cos(rotation) * speed;
+      moveZ -= Math.sin(rotation) * speed;
     }
 
     playerRef.current.position.x += moveX;
     playerRef.current.position.z += moveZ;
     playerRef.current.rotation.y = rotation;
 
-    const cameraDistance = 4;
+    const cameraDistance = 3;
     const cameraHeight = 2;
-    const cameraX = playerRef.current.position.x - Math.sin(rotation) * cameraDistance;
-    const cameraZ = playerRef.current.position.z + Math.cos(rotation) * cameraDistance;
     
-    camera.position.set(
-      cameraX,
-      playerRef.current.position.y + cameraHeight,
-      cameraZ
-    );
+    const horizontalDistance = Math.cos(verticalAngle) * cameraDistance;
+    const verticalDistance = Math.sin(verticalAngle) * cameraDistance;
     
-    camera.lookAt(
-      playerRef.current.position.x,
-      playerRef.current.position.y + 1,
-      playerRef.current.position.z
-    );
+    const cameraX = playerRef.current.position.x + Math.sin(rotation) * horizontalDistance;
+    const cameraY = playerRef.current.position.y + cameraHeight + verticalDistance;
+    const cameraZ = playerRef.current.position.z - Math.cos(rotation) * horizontalDistance;
+    
+    camera.position.set(cameraX, cameraY, cameraZ);
+    
+    const lookAtX = playerRef.current.position.x;
+    const lookAtY = playerRef.current.position.y + 1 + verticalDistance;
+    const lookAtZ = playerRef.current.position.z;
+    
+    camera.lookAt(lookAtX, lookAtY, lookAtZ);
   });
 
   return (
-    <mesh ref={playerRef} position={[0, playerHeight / 2, 0]}>
+    <mesh ref={playerRef} position={[1, 2.3, -10]}>
       <capsuleGeometry args={[playerRadius, playerHeight - playerRadius * 2, 8]} />
       <meshStandardMaterial color="blue" />
     </mesh>
