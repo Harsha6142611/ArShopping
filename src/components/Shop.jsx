@@ -1,188 +1,13 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { Canvas, useLoader, useFrame, useThree } from '@react-three/fiber';
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useNavigate } from 'react-router-dom';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import * as THREE from 'three';
 import './Shop.css';
 
-function Room() {
-  const gltf = useLoader(GLTFLoader, './empty_room.glb');
-  return <primitive object={gltf.scene} position={[0, 0, 0]} />;
-}
-
-function Player() {
-  const { camera } = useThree();
-  const playerRef = useRef();
-  const keys = useRef({});
-  const [rotation, setRotation] = useState(0);
-  const isMouseDown = useRef(false);
-  
-  const playerHeight = 1.8;
-  const playerRadius = 0.3;
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      keys.current[e.key.toLowerCase()] = true;
-    };
-
-    const handleKeyUp = (e) => {
-      keys.current[e.key.toLowerCase()] = false;
-    };
-
-    const handleMouseDown = (e) => {
-      if (e.button === 0) { // Left click
-        isMouseDown.current = true;
-      }
-    };
-
-    const handleMouseUp = (e) => {
-      if (e.button === 0) { // Left click
-        isMouseDown.current = false;
-      }
-    };
-
-    const handleMouseMove = (e) => {
-      if (isMouseDown.current) {
-        // Adjust rotation speed by changing the division factor
-        setRotation((prev) => prev + e.movementX * 0.01);
-      }
-    };
-
-    // Add all event listeners
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      // Remove all event listeners
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
-
-  useFrame(() => {
-    if (!playerRef.current) return;
-
-    const speed = 0.1;
-    let moveX = 0;
-    let moveZ = 0;
-
-    // Calculate movement based on rotation
-    if (keys.current['w']) {
-      moveX += Math.sin(rotation) * speed;
-      moveZ -= Math.cos(rotation) * speed;
-    }
-    if (keys.current['s']) {
-      moveX -= Math.sin(rotation) * speed;
-      moveZ += Math.cos(rotation) * speed;
-    }
-    if (keys.current['a']) {
-      moveX -= Math.cos(rotation) * speed;
-      moveZ -= Math.sin(rotation) * speed;
-    }
-    if (keys.current['d']) {
-      moveX += Math.cos(rotation) * speed;
-      moveZ += Math.sin(rotation) * speed;
-    }
-
-    // Update player position and rotation
-    playerRef.current.position.x += moveX;
-    playerRef.current.position.z += moveZ;
-    playerRef.current.rotation.y = rotation;
-
-    // Update camera position (third-person view)
-    const cameraDistance = 4;
-    const cameraHeight = 2;
-    const cameraX = playerRef.current.position.x - Math.sin(rotation) * cameraDistance;
-    const cameraZ = playerRef.current.position.z + Math.cos(rotation) * cameraDistance;
-    
-    camera.position.set(
-      cameraX,
-      playerRef.current.position.y + cameraHeight,
-      cameraZ
-    );
-    
-    // Make camera look at player
-    camera.lookAt(
-      playerRef.current.position.x,
-      playerRef.current.position.y + 1,
-      playerRef.current.position.z
-    );
-  });
-
-  return (
-    <mesh ref={playerRef} position={[0, playerHeight / 2, 0]}>
-      <capsuleGeometry args={[playerRadius, playerHeight - playerRadius * 2, 8]} />
-      <meshStandardMaterial color="blue" />
-    </mesh>
-  );
-}
-
-// Optional: Helper component to visualize light positions
-function LightHelper({ position }) {
-  return (
-    <mesh position={position}>
-      <sphereGeometry args={[0.1, 16, 16]} />
-      <meshBasicMaterial color="yellow" />
-    </mesh>
-  );
-}
-
-// Add this new component for the interactive object
-function InteractiveBox() {
-  const [hovered, setHovered] = useState(false);
-  
-  const handleClick = () => {
-    alert("You've clicked the interactive box!");
-  };
-
-  return (
-    <mesh
-      position={[2, 1, 2]}
-      onClick={handleClick}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-    >
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={hovered ? "#ff9900" : "#666666"} />
-    </mesh>
-  );
-}
-
-function Lights() {
-  return (
-    <>
-      {/* Ambient light - soft light from all directions */}
-      <ambientLight intensity={0.6} />
-
-      {/* Colored point lights */}
-      <pointLight position={[-4, 4, -4]} intensity={1.5} color="#ff0000" />
-      <LightHelper position={[-4, 4, -4]} />
-
-      <pointLight position={[4, 4, -4]} intensity={1.5} color="#00ff00" />
-      <LightHelper position={[4, 4, -4]} />
-
-      <pointLight position={[0, 4, 4]} intensity={1.5} color="#0000ff" />
-      <LightHelper position={[0, 4, 4]} />
-
-      <pointLight position={[0, 4, 0]} intensity={1} color="#ffffff" />
-      <LightHelper position={[0, 4, 0]} />
-
-      {/* Keep the hemisphere light for general illumination */}
-      <hemisphereLight
-        skyColor="#ffffff"
-        groundColor="#444444"
-        intensity={0.4}
-      />
-    </>
-  );
-}
+import { Room } from './room/Room';
+import { Player } from './player/Player';
+import { Lights } from './lights/Lights';
+import { InteractiveBox } from './interactive/InteractiveBox';
 
 function Shop() {
   const navigate = useNavigate();
@@ -196,13 +21,30 @@ function Shop() {
       <div className="canvas-container">
         <Canvas 
           camera={{ position: [0, 2, 4], fov: 75 }}
-          shadows // Enable shadows
+          shadows
         >
           <Lights />
           <Suspense fallback={null}>
             <Room />
             <Player />
-            <InteractiveBox />
+            <InteractiveBox 
+              position={[3, 1, 3]} 
+              color="#666666" 
+              hoverColor="#ff9900"
+              message="Welcome to the Shop! This is object 1."
+            />
+            <InteractiveBox 
+              position={[-3, 1, 3]} 
+              color="#4a4a4a" 
+              hoverColor="#00ff99"
+              message="You've found object 2!"
+            />
+            <InteractiveBox 
+              position={[0, 1, -3]} 
+              color="#555555" 
+              hoverColor="#9900ff"
+              message="This is object 3. Great exploration!"
+            />
           </Suspense>
           <OrbitControls 
             enablePan={false} 
